@@ -86,7 +86,7 @@ def sync_kafka_to_motherduck():
     try:
         consumer_conf = {
             'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP'),
-            'group.id': 'skyeco-weather-final-001',
+            'group.id': 'skyeco-weather-final-002',
             'auto.offset.reset': 'earliest',
             'security.protocol': 'SASL_SSL',
             'sasl.mechanisms': 'PLAIN',
