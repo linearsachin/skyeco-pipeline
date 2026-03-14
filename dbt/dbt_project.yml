@@ -1,0 +1,13 @@
+name: 'skyeco'
+version: '1.0.0'
+config-version: 2
+profile: 'skyeco_profile'
+
+models:
+  skyeco:
+    bronze:
+      materialized: view
+    silver:
+      materialized: table
+    gold:
+      materialized: table

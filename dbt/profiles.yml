@@ -1,0 +1,9 @@
+skyeco_profile:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: 'md:skyeco_dev'
+      threads: 4
+      extensions:
+        - httpfs

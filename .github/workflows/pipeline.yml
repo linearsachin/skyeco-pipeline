@@ -1,0 +1,21 @@
+name: Hourly SkyEco Sync
+on:
+  schedule:
+    - cron: '0 * * * *' # Every hour
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    env:
+      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+      KAFKA_BOOTSTRAP: ${{ secrets.KAFKA_BOOTSTRAP }}
+      # ... add other secrets
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      - name: Ingest and Sync
+        run: python src/producer.py
+      - name: Transform
+        run: cd dbt && dbt run --profiles-dir .
