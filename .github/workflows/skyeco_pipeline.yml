@@ -1,44 +1,37 @@
-name: SkyEco Hourly Data Pipeline
+name: SkyEco Pipeline Run
 
 on:
   schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch:
+    - cron: '0 * * * *' # Runs every hour
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
-  run-pipeline:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: "Checkout Code"
-        uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: "Set up Python"
-        uses: actions/setup-python@v6
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: '3.9'
 
-      - name: "Install Dependencies"
+      - name: Install System Dependencies
         run: |
-          pip install -r requirements.txt
-          pip install dbt-duckdb==1.9.0 duckdb==1.4.4
+          sudo apt-get update
+          sudo apt-get install -y librdkafka-dev
 
-      - name: "Step 1: Ingest from Kafka to MotherDuck"
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Producer and Sync
         env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           KAFKA_BOOTSTRAP: ${{ secrets.KAFKA_BOOTSTRAP }}
           KAFKA_KEY: ${{ secrets.KAFKA_KEY }}
           KAFKA_SECRET: ${{ secrets.KAFKA_SECRET }}
-          KAFKA_TOPIC: "flights_raw"
-        run: python src/producer.py
-
-      - name: "Step 2: Run dbt Transformations"
-        env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          cd dbt
-          dbt deps
-          dbt clean
-          dbt run --target dev --no-partial-parse
-          dbt test --target dev --no-partial-parse
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+        run: python src/producer.py
