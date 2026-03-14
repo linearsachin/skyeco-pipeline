@@ -39,6 +39,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dbt
-          dbt deps
+          dbt deps          # This installs dbt_utils
+          dbt clean         # Clears old artifacts that cause "r to DOUBLE" errors
           dbt run --target dev
-          dbt test
+          dbt test --target dev

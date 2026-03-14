@@ -4,17 +4,19 @@ models:
   - name: stg_flights
     columns:
       - name: icao24
-        tests:
+        data_tests: # 'tests' is now 'data_tests' in modern dbt
           - not_null
 
       - name: latitude
-        tests:
+        data_tests:
           - dbt_utils.accepted_range:
-              min_value: -90
-              max_value: 90
+              arguments: # This is the fix for the conversion error
+                min_value: -90
+                max_value: 90
 
       - name: speed_kmh
-        tests:
+        data_tests:
           - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 1300 # Roughly the speed of sound+ for jets
+              arguments:
+                min_value: 0
+                max_value: 1300
