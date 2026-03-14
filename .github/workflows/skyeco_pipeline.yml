@@ -39,7 +39,12 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dbt
-          dbt deps          # This installs dbt_utils
-          dbt clean         # Clears old artifacts that cause "r to DOUBLE" errors
-          dbt run --target dev
-          dbt test --target dev
+          # Force clean and fresh state
+          rm -rf dbt_packages/
+          rm -rf target/
+          rm -rf dev.duckdb
+          dbt deps
+          dbt clean
+          # Run with --no-partial-parse to ignore the corrupted cache
+          dbt run --target dev --no-partial-parse
+          dbt test --target dev --no-partial-parse

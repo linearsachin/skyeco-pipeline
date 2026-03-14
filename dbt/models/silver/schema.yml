@@ -4,19 +4,16 @@ models:
   - name: stg_flights
     columns:
       - name: icao24
-        data_tests: # 'tests' is now 'data_tests' in modern dbt
+        data_tests:
           - not_null
 
       - name: latitude
         data_tests:
-          - dbt_utils.accepted_range:
-              arguments: # This is the fix for the conversion error
-                min_value: -90
-                max_value: 90
+          # We use a simple SQL expression to avoid dbt_utils dependency issues for now
+          - dbt.expression_is_true:
+              expression: "latitude >= -90 AND latitude <= 90"
 
       - name: speed_kmh
         data_tests:
-          - dbt_utils.accepted_range:
-              arguments:
-                min_value: 0
-                max_value: 1300
+          - dbt.expression_is_true:
+              expression: "speed_kmh >= 0 AND speed_kmh <= 1300"
