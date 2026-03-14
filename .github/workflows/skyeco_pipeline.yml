@@ -2,19 +2,19 @@ name: SkyEco Hourly Data Pipeline
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs at the start of every hour
-  workflow_dispatch: # Allows you to click a button to run it manually
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
     
-  steps:
+    steps:
       - name: "Checkout Code"
-        uses: actions/checkout@v6 # <--- Changed from v4 to v6
+        uses: actions/checkout@v6
 
       - name: "Set up Python"
-        uses: actions/setup-python@v6 # <--- Changed from v5 to v6
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -28,11 +28,9 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           KAFKA_BOOTSTRAP: ${{ secrets.KAFKA_BOOTSTRAP }}
-          # Check your producer.py: if it looks for 'KAFKA_KEY', use that here.
-          # If it looks for 'KAFKA_USER', change this name.
-          KAFKA_KEY: ${{ secrets.KAFKA_KEY }} 
+          KAFKA_KEY: ${{ secrets.KAFKA_KEY }}
           KAFKA_SECRET: ${{ secrets.KAFKA_SECRET }}
-          KAFKA_TOPIC: "flights_raw" 
+          KAFKA_TOPIC: "flights_raw"
         run: python src/producer.py
 
       - name: "Step 2: Run dbt Transformations"
@@ -40,12 +38,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dbt
-          # Force clean and fresh state
-          rm -rf dbt_packages/
-          rm -rf target/
-          rm -rf dev.duckdb
           dbt deps
           dbt clean
-          # Run with --no-partial-parse to ignore the corrupted cache
           dbt run --target dev --no-partial-parse
           dbt test --target dev --no-partial-parse
