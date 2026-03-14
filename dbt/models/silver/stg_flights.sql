@@ -32,14 +32,11 @@ SELECT
     -- Refined Carbon Logic:
     -- Now safe from NULLs because of COALESCE above
     (
-        CASE 
-            WHEN altitude_m < 5000 THEN 2.8 
-            ELSE 2.2 
-        END 
-        * (CASE WHEN wind_speed_mps > 15 THEN 1.10 ELSE 1.0 END)
-        * (CASE WHEN air_temp_c < -10 THEN 1.05 ELSE 1.0 END)
-        * 3.16 
-    ) as co2_kg_per_km
+        (3.0 - (altitude_m * 0.0001)) -- Base burn that changes with height
+        * (1 + (wind_speed_mps * 0.005)) -- Progressive wind penalty
+        * (1 + (CASE WHEN air_temp_c < 15 THEN (15 - air_temp_c) * 0.002 ELSE 0 END)) -- Cold air penalty
+        * 3.16 -- Carbon conversion factor
+    )as co2_kg_per_km
 FROM base_data
 -- Filter out stationary 'flights' or data glitches
 WHERE velocity_ms > 0

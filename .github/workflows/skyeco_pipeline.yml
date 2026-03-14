@@ -29,7 +29,7 @@ jobs:
           pip install -r requirements.txt
           # OR manually if you don't have one yet:
           pip install confluent-kafka requests duckdb python-dotenv
-          
+
       - name: Run Producer and Sync
         env:
           KAFKA_BOOTSTRAP: ${{ secrets.KAFKA_BOOTSTRAP }}
@@ -38,3 +38,12 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
         run: python src/producer.py
+
+      - name: Run dbt Transformations (Silver Layer)
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          # Move into your dbt project folder if it's not in the root
+          cd dbt 
+          dbt deps
+          dbt run
