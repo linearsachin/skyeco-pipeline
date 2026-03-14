@@ -45,5 +45,5 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dbt  
-          python -m dbt deps
-          python -m dbt run --profiles-dir .
+          dbt deps
+          dbt run --profiles-dir . --target dev
