@@ -43,6 +43,6 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          cd dbt 
-          dbt deps
-          dbt run
+          cd dbt  
+          python -m dbt deps
+          python -m dbt run --profiles-dir .
