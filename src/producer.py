@@ -124,7 +124,6 @@ def sync_kafka_to_motherduck():
                 data.get('velocity'), data.get('timestamp'),
                 data.get('temp'), data.get('wind_speed'), data.get('weather_desc')
             ))
-            print(data)
             count += 1
 
         if messages:
