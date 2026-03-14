@@ -3,7 +3,5 @@ skyeco_profile:
   outputs:
     dev:
       type: duckdb
-      path: 'md:skyeco_dev'
+      path: "md:skyeco_dev?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
       threads: 4
-      extensions:
-        - httpfs

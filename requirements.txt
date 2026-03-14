@@ -1,0 +1,6 @@
+requests
+confluent-kafka
+duckdb==1.1.3
+dbt-duckdb
+python-dotenv
+streamlit
