@@ -27,6 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           # If you have a requirements.txt:
           pip install -r requirements.txt
+          pip install confluent-kafka requests duckdb python-dotenv dbt-duckdb
           # OR manually if you don't have one yet:
           pip install confluent-kafka requests duckdb python-dotenv
 
