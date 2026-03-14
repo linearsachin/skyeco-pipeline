@@ -28,9 +28,10 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           KAFKA_BOOTSTRAP: ${{ secrets.KAFKA_BOOTSTRAP }}
-          KAFKA_KEY: ${{ secrets.KAFKA_KEY }}
+          # Check your producer.py: if it looks for 'KAFKA_KEY', use that here.
+          # If it looks for 'KAFKA_USER', change this name.
+          KAFKA_KEY: ${{ secrets.KAFKA_KEY }} 
           KAFKA_SECRET: ${{ secrets.KAFKA_SECRET }}
-          # Adding these as env vars helps the script find them
           KAFKA_TOPIC: "flights_raw" 
         run: python src/producer.py
 
