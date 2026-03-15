@@ -5,7 +5,7 @@ import os
 import plotly.express as px
 from dotenv import load_dotenv
 import plotly.graph_objects as go
-
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -89,12 +89,13 @@ def get_data():
     ORDER BY observed_at DESC
     """
     df = con.execute(query).df()
+    con.close()
     
-    # Cleaning & Types
+    df['observed_at'] = pd.to_datetime(df['observed_at']).dt.tz_localize(None)
+    
     df['co2_kg_per_km'] = df['co2_kg_per_km'].fillna(0)
     df['air_temp_c'] = df['air_temp_c'].fillna(15.0)
     df['wind_speed_mps'] = df['wind_speed_mps'].fillna(0)
-    df['observed_at'] = pd.to_datetime(df['observed_at'])
     
     def get_efficiency_status(wind):
         if wind > 15: return "High Resistance"
@@ -105,36 +106,58 @@ def get_data():
     return df
 
 try:
-    df_raw = get_data()
+    df_all = get_data()
+    
+    if not df_all.empty:
+        abs_min = df_all['observed_at'].min().to_pydatetime()
+        abs_max = df_all['observed_at'].max().to_pydatetime()
+    else:
+        abs_min = datetime.now() - timedelta(days=1)
+        abs_max = datetime.now()
 
     # --- Sidebar: Intelligence Hub ---
     with st.sidebar:
         st.title("System Parameters")
         
-        # ADDED: Filter Explainer
-        st.caption("Adjust scope by region or weather condition to analyze localized environmental impacts.")
+        st.markdown("### Temporal Scope")
+        scope_mode = st.radio("Selection Mode", ["Full Range", "Hourly Window", "Custom Range"], horizontal=True)
         
-        with st.container(border=True):
-            st.markdown("**Live Metadata**")
-            st.info(f"Countries: {df_raw['origin_country'].nunique()} | Assets: {len(df_raw)}")
+        start_filter, end_filter = abs_min, abs_max
         
-        st.markdown("### Filters")
-        countries = st.multiselect("Origin Regions", sorted(df_raw['origin_country'].unique()))
-        weather = st.multiselect("Weather Patterns", sorted(df_raw['weather_desc'].unique()))
+        if scope_mode == "Hourly Window":
+            hours_back = st.slider("Hours Lookback (from latest)", 1, 72, 24)
+            start_filter = abs_max - timedelta(hours=hours_back)
+        
+        elif scope_mode == "Custom Range":
+            d_start = st.date_input("Start Date", abs_min.date())
+            t_start = st.time_input("Start Time", abs_min.time())
+            d_end = st.date_input("End Date", abs_max.date())
+            t_end = st.time_input("End Time", abs_max.time())
+            start_filter = datetime.combine(d_start, t_start)
+            end_filter = datetime.combine(d_end, t_end)
+
+        #  Temporal Filter
+        df_raw = df_all[(df_all['observed_at'] >= start_filter) & (df_all['observed_at'] <= end_filter)]
+
+        st.markdown("### Regional Filters")
+        countries = st.multiselect("Origin Regions", sorted(df_raw['origin_country'].unique()) if not df_raw.empty else [])
+        weather = st.multiselect("Weather Patterns", sorted(df_raw['weather_desc'].unique()) if not df_raw.empty else [])
         
         df = df_raw.copy()
         if countries: df = df[df['origin_country'].isin(countries)]
         if weather: df = df[df['weather_desc'].isin(weather)]
-        
-        # ADDED: Status Guide
-        with st.expander("📖 Efficiency Legend"):
-            st.write("**Optimal Flow:** Wind < 8 m/s. Minimal drag.")
-            st.write("**Moderate Drag:** Wind 8-15 m/s. Increasing fuel burn.")
-            st.write("**High Resistance:** Wind > 15 m/s. Significant carbon penalty.")
+
 
     # --- Header ---
     st.title("SkyEco Emissions Intelligence")
-    st.caption(f"Last Sync: {df['observed_at'].max().strftime('%H:%M:%S')}")
+    if not df.empty:
+        last_sync = df['observed_at'].max().strftime('%Y-%m-%d %H:%M:%S')
+        window_start = start_filter.strftime('%Y-%m-%d %H:%M')
+        window_end = end_filter.strftime('%Y-%m-%d %H:%M')
+        
+        st.caption(f"Last Sync: {last_sync} | Window: {window_start} to {window_end}")
+    else:
+        st.warning("⚠️ No assets found for this timeframe or filter combination.")
 
     # --- Row 1: High-Density KPI Grid with Explainers ---
     kpi_cols = st.columns(6)
@@ -151,34 +174,34 @@ try:
     avg_wind_curr = df['wind_speed_mps'].mean()
     wind_delta = avg_wind_curr - df_raw['wind_speed_mps'].mean()
 
-    # KPI 1: Asset Count (Added 'help')
+    # KPI 1: Asset Count 
     kpi_cols[0].metric("Monitored", len(df), 
                        delta=f"{len(df)-len(df_raw) if countries else 0} focus",
                        help="Total number of aircraft currently transmitting ADS-B data within selected filters.")
     
-    # KPI 2: Carbon Intensity (Added 'help')
+    # KPI 2: Carbon Intensity 
     kpi_cols[1].metric("CO2 Intensity", f"{avg_co2_curr:.2f}", 
                        delta=f"{co2_delta:.1f}%", delta_color="inverse",
                        help="Estimated kg of CO2 emitted per km. Delta shows comparison between filtered segment and global fleet average.")
     
-    # KPI 3: Thermal Environment (Added 'help')
+    # KPI 3: Thermal Environment 
     kpi_cols[2].metric("Ambient Temp", f"{avg_temp_curr:.1f}°C", 
                        delta=f"{temp_delta:.1f}°C",
                        help="Average static air temperature at altitude. Cooler air increases density, impacting lift and engine efficiency.")
     
-    # KPI 4: Wind Resistance (Added 'help')
+    # KPI 4: Wind Resistance 
     kpi_cols[3].metric("Wind Load", f"{avg_wind_curr:.1f} m/s", 
                        delta=f"{wind_delta:.1f}", delta_color="inverse",
                        help="Mean wind speed at flight level. High values indicate significant atmospheric resistance and fuel drag.")
     
-    # KPI 5: Mean Velocity (Added 'help')
+    # KPI 5: Mean Velocity 
     avg_vel = df['speed_kmh'].mean()
     vel_delta = avg_vel - df_raw['speed_kmh'].mean()
     kpi_cols[4].metric("Air Velocity", f"{avg_vel:.0f} km/h", 
                        delta=f"{vel_delta:.0f}",
                        help="Average Ground Speed (GS) of tracked assets.")
     
-    # KPI 6: Fleet Efficiency (Added 'help')
+    # KPI 6: Fleet Efficiency 
     optimal_count = len(df[df['Efficiency_Status'] == "Optimal Flow"])
     eff_pct = (optimal_count / len(df)) * 100 if len(df) > 0 else 0
     kpi_cols[5].metric("Fleet Efficiency", f"{eff_pct:.0f}%", 
@@ -197,16 +220,13 @@ try:
         st.subheader("Global Asset Deployment")
         st.markdown('<p class="explainer-text">Live telemetry showing real-time CO2 intensity. Darker map zones indicate nominal operations.</p>', unsafe_allow_html=True)
 
-        # 1. Initialize the Figure
         fig_map = go.Figure()
 
-        # 2. Add the Performance Markers (The actual aircraft)
         fig_map.add_trace(go.Scattermapbox(
             lat=df["latitude"],
             lon=df["longitude"],
             mode='markers',
             marker=go.scattermapbox.Marker(
-                # Using a slightly larger size for better visibility since lines are gone
                 size=df["co2_kg_per_km"] * 1.2, 
                 sizemode='area',
                 sizeref=0.1,
@@ -216,14 +236,13 @@ try:
                 showscale=False
             ),
             text=df["callsign"],
-            # Cleaner hover template
             hovertemplate="<b>ID: %{text}</b><br>Intensity: %{marker.color:.2f} kg/km<extra></extra>"
         ))
 
         # 3. Tactical Layout with Dark Vector Style
         fig_map.update_layout(
             mapbox=dict(
-                style="carto-darkmatter", # Sleek, high-contrast dark mode
+                style="carto-darkmatter", 
                 center=dict(lat=df['latitude'].mean(), lon=df['longitude'].mean()),
                 zoom=1.2
             ),
@@ -289,7 +308,6 @@ try:
             </div>
         """, unsafe_allow_html=True)
 
-        # --- FILLING THE EMPTY SPACE: Weather Correlation Chart ---
         st.markdown("<br><b>Weather Condition vs. Carbon Intensity</b>", unsafe_allow_html=True)
         weather_avg = df.groupby('weather_desc')['co2_kg_per_km'].mean().sort_values().reset_index()
         
@@ -326,7 +344,6 @@ try:
             opacity=0.6
         )
         
-        # Use a single, neutral steel blue for the histogram
         fig_hist.update_traces(
             marker_color='#3b82f6', 
             marker_line_width=1,
@@ -351,7 +368,6 @@ try:
         
         country_data = df.groupby('origin_country')['co2_kg_per_km'].mean().sort_values(ascending=True).tail(10).reset_index()
         
-        # Swapping the rainbow for a subtle Blues gradient
         fig_bar = px.bar(
             country_data, 
             x='co2_kg_per_km', 
@@ -377,7 +393,6 @@ try:
     # --- Row 4: Operational Ledger ---
     st.divider()
     st.subheader("Operational Flight Ledger")
-    # ADDED: Detailed explainer
     st.info("The ledger below provides raw telemetry data for individual assets. Use the column headers to sort by intensity or altitude for detailed auditing.")
     st.dataframe(
         df[['observed_at', 'callsign', 'origin_country', 'speed_kmh', 'altitude_m', 'air_temp_c', 'wind_speed_mps', 'weather_desc', 'co2_kg_per_km']],
@@ -423,7 +438,6 @@ try:
             - **Precision:** $98.4\%$
             """)
             st.caption("Fidelity is calculated based on the deviation between ADS-B positional data and flight plan estimates.")
-# --- NEW: SYSTEM GOVERNANCE (APIs & LICENSE) ---
     st.divider()
     
     gov_col1, gov_col2, gov_col3 = st.columns([2, 2, 1])
