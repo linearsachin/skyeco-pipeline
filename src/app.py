@@ -462,8 +462,14 @@ try:
         st.markdown("### Tech Stack")
         st.code("Streamlit\nPlotly\nDuckDB\nApache Kafka", language="text")
 
-    st.markdown('<div class="footer-text">© 2026 SkyEco Intelligence Framework. All rights reserved.</div>', unsafe_allow_html=True)
-
+    st.markdown("""
+        <hr style="margin-top: 2rem; opacity: 0.1;">
+        <div style="text-align: center; color: #6b7280; font-size: 0.9rem; padding-bottom: 2rem;">
+            Developed by <b>Sachin Yadav</b> <br>
+            <a href="https://github.com/linearsachin/skyeco-pipeline" target="_blank" style="text-decoration: none; color: #3b82f6;">Source Code</a> | 
+            <a href="https://www.linkedin.com/in/linearsachin/" target="_blank" style="text-decoration: none; color: #3b82f6;">Professional Profile</a>
+        </div>
+    """, unsafe_allow_html=True)
 except Exception as e:
     st.error("Intelligence Interface Offline.")
     st.exception(e)
