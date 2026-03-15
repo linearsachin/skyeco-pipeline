@@ -75,17 +75,11 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- Data Engine ---
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=3600) 
 def get_data():
-    token = os.getenv('MOTHERDUCK_TOKEN')
-    con = duckdb.connect(f"md:skyeco_dev?motherduck_token={token}")
-    
+    con = duckdb.connect() 
     query = """
-    SELECT 
-        icao24, callsign, origin_country, latitude, longitude, 
-        altitude_m, speed_kmh, co2_kg_per_km, air_temp_c, 
-        wind_speed_mps, weather_desc, observed_at
-    FROM skyeco_dev.main.stg_flights
+    SELECT * FROM 'flights_snapshot.parquet'
     ORDER BY observed_at DESC
     """
     df = con.execute(query).df()
