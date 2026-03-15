@@ -2,3 +2,8 @@ confluent-kafka
 requests
 duckdb
 python-dotenv
+streamlit
+duckdb
+pandas
+plotly
+python-dotenv
