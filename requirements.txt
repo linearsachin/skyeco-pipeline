@@ -1,7 +1,7 @@
 confluent-kafka
 requests
-duckdb
-python-dotenv
 streamlit
+duckdb==1.4.4
+python-dotenv
 pandas
 plotly
